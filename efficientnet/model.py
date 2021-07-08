@@ -45,7 +45,7 @@ keras_utils = None
 
 BlockArgs = collections.namedtuple('BlockArgs', [
     'kernel_size', 'num_repeat', 'input_filters', 'output_filters',
-    'expand_ratio', 'id_skip', 'strides', 'se_ratio'
+    'expand_ratio', 'id_skip', 'strides', 'se_ratio', 'fused'
 ])
 # defaults will be a public argument for namedtuple in Python 3.7
 # https://docs.python.org/3/library/collections.html#collections.namedtuple
@@ -53,19 +53,70 @@ BlockArgs.__new__.__defaults__ = (None,) * len(BlockArgs._fields)
 
 DEFAULT_BLOCKS_ARGS = [
     BlockArgs(kernel_size=3, num_repeat=1, input_filters=32, output_filters=16,
-              expand_ratio=1, id_skip=True, strides=[1, 1], se_ratio=0.25),
+              expand_ratio=1, id_skip=True, strides=[1, 1], se_ratio=0.25, fused=False),
     BlockArgs(kernel_size=3, num_repeat=2, input_filters=16, output_filters=24,
-              expand_ratio=6, id_skip=True, strides=[2, 2], se_ratio=0.25),
+              expand_ratio=6, id_skip=True, strides=[2, 2], se_ratio=0.25, fused=False),
     BlockArgs(kernel_size=5, num_repeat=2, input_filters=24, output_filters=40,
-              expand_ratio=6, id_skip=True, strides=[2, 2], se_ratio=0.25),
+              expand_ratio=6, id_skip=True, strides=[2, 2], se_ratio=0.25, fused=False),
     BlockArgs(kernel_size=3, num_repeat=3, input_filters=40, output_filters=80,
-              expand_ratio=6, id_skip=True, strides=[2, 2], se_ratio=0.25),
+              expand_ratio=6, id_skip=True, strides=[2, 2], se_ratio=0.25, fused=False),
     BlockArgs(kernel_size=5, num_repeat=3, input_filters=80, output_filters=112,
-              expand_ratio=6, id_skip=True, strides=[1, 1], se_ratio=0.25),
+              expand_ratio=6, id_skip=True, strides=[1, 1], se_ratio=0.25, fused=False),
     BlockArgs(kernel_size=5, num_repeat=4, input_filters=112, output_filters=192,
-              expand_ratio=6, id_skip=True, strides=[2, 2], se_ratio=0.25),
+              expand_ratio=6, id_skip=True, strides=[2, 2], se_ratio=0.25, fused=False),
     BlockArgs(kernel_size=3, num_repeat=1, input_filters=192, output_filters=320,
-              expand_ratio=6, id_skip=True, strides=[1, 1], se_ratio=0.25)
+              expand_ratio=6, id_skip=True, strides=[1, 1], se_ratio=0.25, fused=False)
+]
+
+
+DEFAULT_BLOCKS_ARGS_v2_base = [
+    BlockArgs(kernel_size=3, num_repeat=1, input_filters=32, output_filters=16,
+              expand_ratio=1, id_skip=True, strides=[1, 1], se_ratio=None, fused=True),
+    BlockArgs(kernel_size=3, num_repeat=2, input_filters=16, output_filters=32,
+              expand_ratio=4, id_skip=True, strides=[2, 2], se_ratio=None, fused=True),
+    BlockArgs(kernel_size=3, num_repeat=2, input_filters=32, output_filters=48,
+              expand_ratio=4, id_skip=True, strides=[2, 2], se_ratio=None, fused=True),
+    BlockArgs(kernel_size=3, num_repeat=3, input_filters=48, output_filters=96,
+              expand_ratio=4, id_skip=True, strides=[2, 2], se_ratio=0.25, fused=False),
+    BlockArgs(kernel_size=3, num_repeat=5, input_filters=96, output_filters=112,
+              expand_ratio=6, id_skip=True, strides=[1, 1], se_ratio=0.25, fused=False),
+    BlockArgs(kernel_size=3, num_repeat=8, input_filters=112, output_filters=192,
+              expand_ratio=6, id_skip=True, strides=[2, 2], se_ratio=0.25, fused=False),
+
+]
+
+DEFAULT_BLOCKS_ARGS_v2_s = [
+    BlockArgs(kernel_size=3, num_repeat=2, input_filters=24, output_filters=24,
+              expand_ratio=1, id_skip=True, strides=[1, 1], se_ratio=None, fused=True),
+    BlockArgs(kernel_size=3, num_repeat=4, input_filters=24, output_filters=48,
+              expand_ratio=4, id_skip=True, strides=[2, 2], se_ratio=None, fused=True),
+    BlockArgs(kernel_size=3, num_repeat=4, input_filters=48, output_filters=64,
+              expand_ratio=4, id_skip=True, strides=[2, 2], se_ratio=None, fused=True),
+    BlockArgs(kernel_size=3, num_repeat=6, input_filters=64, output_filters=128,
+              expand_ratio=4, id_skip=True, strides=[2, 2], se_ratio=0.25, fused=False),
+    BlockArgs(kernel_size=3, num_repeat=9, input_filters=128, output_filters=160,
+              expand_ratio=6, id_skip=True, strides=[1, 1], se_ratio=0.25, fused=False),
+    BlockArgs(kernel_size=3, num_repeat=15, input_filters=160, output_filters=256,
+              expand_ratio=6, id_skip=True, strides=[2, 2], se_ratio=0.25, fused=False),
+
+]
+
+
+DEFAULT_BLOCKS_ARGS_v2_m = [
+    BlockArgs(kernel_size=3, num_repeat=3, input_filters=24, output_filters=24,
+              expand_ratio=1, id_skip=True, strides=[1, 1], se_ratio=None, fused=True),
+    BlockArgs(kernel_size=3, num_repeat=5, input_filters=24, output_filters=48,
+              expand_ratio=4, id_skip=True, strides=[2, 2], se_ratio=None, fused=True),
+    BlockArgs(kernel_size=3, num_repeat=5, input_filters=48, output_filters=80,
+              expand_ratio=4, id_skip=True, strides=[2, 2], se_ratio=None, fused=True),
+    BlockArgs(kernel_size=3, num_repeat=7, input_filters=80, output_filters=160,
+              expand_ratio=4, id_skip=True, strides=[2, 2], se_ratio=0.25, fused=False),
+    BlockArgs(kernel_size=3, num_repeat=14, input_filters=160, output_filters=176,
+              expand_ratio=6, id_skip=True, strides=[1, 1], se_ratio=0.25, fused=False),
+    BlockArgs(kernel_size=3, num_repeat=18, input_filters=176, output_filters=304,
+              expand_ratio=6, id_skip=True, strides=[2, 2], se_ratio=0.25, fused=False),
+    BlockArgs(kernel_size=3, num_repeat=5, input_filters=304, output_filters=512,
+              expand_ratio=6, id_skip=True, strides=[1, 1], se_ratio=0.25, fused=False),
 ]
 
 CONV_KERNEL_INITIALIZER = {
@@ -160,7 +211,7 @@ def round_repeats(repeats, depth_coefficient):
 
 def mb_conv_block(inputs, block_args, activation, drop_rate=None, prefix='', ):
     """Mobile Inverted Residual Bottleneck."""
-
+    fused = block_args.fused
     has_se = (block_args.se_ratio is not None) and (0 < block_args.se_ratio <= 1)
     bn_axis = 3 if backend.image_data_format() == 'channels_last' else 1
 
@@ -174,8 +225,9 @@ def mb_conv_block(inputs, block_args, activation, drop_rate=None, prefix='', ):
 
     # Expansion phase
     filters = block_args.input_filters * block_args.expand_ratio
-    if block_args.expand_ratio != 1:
-        x = layers.Conv2D(filters, 1,
+
+    if fused:
+        x = layers.Conv2D(filters, 3,
                           padding='same',
                           use_bias=False,
                           kernel_initializer=CONV_KERNEL_INITIALIZER,
@@ -183,17 +235,26 @@ def mb_conv_block(inputs, block_args, activation, drop_rate=None, prefix='', ):
         x = layers.BatchNormalization(axis=bn_axis, name=prefix + 'expand_bn')(x)
         x = layers.Activation(activation, name=prefix + 'expand_activation')(x)
     else:
-        x = inputs
+        if block_args.expand_ratio != 1:
+            x = layers.Conv2D(filters, 1,
+                              padding='same',
+                              use_bias=False,
+                              kernel_initializer=CONV_KERNEL_INITIALIZER,
+                              name=prefix + 'expand_conv')(inputs)
+            x = layers.BatchNormalization(axis=bn_axis, name=prefix + 'expand_bn')(x)
+            x = layers.Activation(activation, name=prefix + 'expand_activation')(x)
+        else:
+            x = inputs
 
-    # Depthwise Convolution
-    x = layers.DepthwiseConv2D(block_args.kernel_size,
-                               strides=block_args.strides,
-                               padding='same',
-                               use_bias=False,
-                               depthwise_initializer=CONV_KERNEL_INITIALIZER,
-                               name=prefix + 'dwconv')(x)
-    x = layers.BatchNormalization(axis=bn_axis, name=prefix + 'bn')(x)
-    x = layers.Activation(activation, name=prefix + 'activation')(x)
+        # Depthwise Convolution
+        x = layers.DepthwiseConv2D(block_args.kernel_size,
+                                   strides=block_args.strides,
+                                   padding='same',
+                                   use_bias=False,
+                                   depthwise_initializer=CONV_KERNEL_INITIALIZER,
+                                   name=prefix + 'dwconv')(x)
+        x = layers.BatchNormalization(axis=bn_axis, name=prefix + 'bn')(x)
+        x = layers.Activation(activation, name=prefix + 'activation')(x)
 
     # Squeeze and Excitation phase
     if has_se:
@@ -244,7 +305,6 @@ def mb_conv_block(inputs, block_args, activation, drop_rate=None, prefix='', ):
 
     return x
 
-
 def EfficientNet(width_coefficient,
                  depth_coefficient,
                  default_resolution,
@@ -252,6 +312,7 @@ def EfficientNet(width_coefficient,
                  drop_connect_rate=0.2,
                  depth_divisor=8,
                  blocks_args=DEFAULT_BLOCKS_ARGS,
+                 stem_filters=32,
                  model_name='efficientnet',
                  include_top=True,
                  weights='imagenet',
@@ -342,7 +403,7 @@ def EfficientNet(width_coefficient,
 
     # Build stem
     x = img_input
-    x = layers.Conv2D(round_filters(32, width_coefficient, depth_divisor), 3,
+    x = layers.Conv2D(round_filters(stem_filters, width_coefficient, depth_divisor), 3,
                       strides=(2, 2),
                       padding='same',
                       use_bias=False,
@@ -625,6 +686,62 @@ def EfficientNetL2(
         **kwargs
     )
 
+def EfficientNetV2B(
+        include_top=True,
+        weights='imagenet',
+        input_tensor=None,
+        input_shape=None,
+        pooling=None,
+        classes=1000,
+        **kwargs
+):
+    return EfficientNet(
+        1.0, 1.0, 224, 0.5,
+        model_name='efficientnet-v2s', stem_filters=24,
+        include_top=include_top, weights=weights,
+        blocks_args=DEFAULT_BLOCKS_ARGS_v2_base,
+        input_tensor=input_tensor, input_shape=input_shape,
+        pooling=pooling, classes=classes,
+        **kwargs
+    )
+
+def EfficientNetV2S(
+        include_top=True,
+        weights='imagenet',
+        input_tensor=None,
+        input_shape=None,
+        pooling=None,
+        classes=1000,
+        **kwargs
+):
+    return EfficientNet(
+        1.0, 1.0, 224, 0.5,
+        model_name='efficientnet-v2s', stem_filters=24,
+        include_top=include_top, weights=weights,
+        blocks_args=DEFAULT_BLOCKS_ARGS_v2_s,
+        input_tensor=input_tensor, input_shape=input_shape,
+        pooling=pooling, classes=classes,
+        **kwargs
+    )
+
+def EfficientNetV2M(
+        include_top=True,
+        weights='imagenet',
+        input_tensor=None,
+        input_shape=None,
+        pooling=None,
+        classes=1000,
+        **kwargs
+):
+    return EfficientNet(
+        1.0, 1.0, 384, 0.5,
+        model_name='efficientnet-v2m', stem_filters=24,
+        include_top=include_top, weights=weights,
+        blocks_args=DEFAULT_BLOCKS_ARGS_v2_m,
+        input_tensor=input_tensor, input_shape=input_shape,
+        pooling=pooling, classes=classes,
+        **kwargs
+    )
 
 setattr(EfficientNetB0, '__doc__', EfficientNet.__doc__)
 setattr(EfficientNetB1, '__doc__', EfficientNet.__doc__)
@@ -635,3 +752,6 @@ setattr(EfficientNetB5, '__doc__', EfficientNet.__doc__)
 setattr(EfficientNetB6, '__doc__', EfficientNet.__doc__)
 setattr(EfficientNetB7, '__doc__', EfficientNet.__doc__)
 setattr(EfficientNetL2, '__doc__', EfficientNet.__doc__)
+setattr(EfficientNetV2B, '__doc__', EfficientNet.__doc__)
+setattr(EfficientNetV2S, '__doc__', EfficientNet.__doc__)
+setattr(EfficientNetV2M, '__doc__', EfficientNet.__doc__)
